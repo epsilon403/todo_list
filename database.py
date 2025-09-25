@@ -14,7 +14,8 @@ from sqlalchemy import (
     Select,
     or_,
     desc,
-    Enum as sqlalchemyEnum,
+    Enum ,
+    Boolean
 )
 meta = MetaData()
 
@@ -33,8 +34,10 @@ tasks_table = Table(
     Column('id' , Integer , primary_key=True),
     Column('title' , String(50) , unique=True),
     Column('description' , Text , nullable=True),
-    Column('priority' , sqlalchemyEnum('red' , 'green' , 'yellow' ,name = 'priority_enum_type'))
+    Column('priority' , Enum('red' , 'green' , 'yellow' ,name = 'priority_enum_type')),
+    Column('completed', Enum('undone' , 'done' ,name = 'completed_status' ) ,  server_default='undone') 
 )
+
 engine = create_engine('postgresql://postgres:epsilon2001@localhost:5432/to_do_list')
 
 meta.create_all(engine)

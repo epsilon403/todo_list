@@ -2,7 +2,7 @@ from tkinter import *
 from tkinter import ttk
 import tkinter as tk
 from sqlalchemy.orm import Session
-from sqlalchemy import Table , MetaData , create_engine , insert , select , text , delete
+from sqlalchemy import Table , MetaData , create_engine , insert , select , text , delete, DefaultClause
 
 metadata = MetaData()
 engine = create_engine('postgresql://postgres:epsilon2001@localhost:5432/to_do_list')
@@ -71,12 +71,13 @@ class to_do_app:
         self.show_button.grid(row=2, column=1, sticky="e", padx=5, pady=10)
 
 
-        columns = ('id', 'title', 'description', 'action')
+        columns = ('id', 'title', 'description', 'action' , 'status')
         self.task_treeview = ttk.Treeview(self.root, columns=columns, show='headings')
         self.task_treeview.heading('id', text='ID')
         self.task_treeview.heading('title', text='Title')
         self.task_treeview.heading('description', text='Description')
         self.task_treeview.heading('action', text='Action')
+        self.task_treeview.heading('status' , text='Status')
 
         self.task_treeview.column('id', width=40, anchor='center')
         self.task_treeview.column('action', width=100, anchor='center')
@@ -100,9 +101,10 @@ class to_do_app:
         if not task: # Don't add empty tasks
             return
 
-        statement = insert(self.task_table).values(title=task, description=description)
+        statement = insert(self.task_table).values(title=task, description=description ,  completed='undone' )
         
         with engine.connect() as conn:
+            conn.execute(text("ALTER TABLE tasks ALTER COLUMN completed SET DEFAULT 'undone'"))
             conn.execute(statement)
             conn.commit() # Make sure to commit the changes
 
@@ -127,14 +129,14 @@ class to_do_app:
         if all_tasks:
             for task in all_tasks:
                 # --- THIS IS THE KEY CHANGE ---
-                # Add the word "Delete" to the values tuple for the 'action' column
-                values_with_action = (task[0], task[1], task[2], "Delete")
+                # add the word "Delete" to the values tuple for the 'action' column
+                values_with_action = (task[0], task[1], task[2], "Delete" , task[4])
                 self.task_treeview.insert('', tk.END, values=values_with_action)
         
         print("Task list refreshed.")
 
     def handle_click(self, event):
-        """Checks if a click happened on a 'Delete' cell."""
+        """checks if a click happened on a 'Delete' cell."""
         region = self.task_treeview.identify("region", event.x, event.y)
         column = self.task_treeview.identify_column(event.x)
 
@@ -150,6 +152,7 @@ class to_do_app:
   
         statement = delete(self.task_table).where(self.task_table.c.id == task_id) 
         with engine.connect() as conn:
+            
             conn.execute(statement)
             conn.commit() 
         
